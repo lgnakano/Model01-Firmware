@@ -27,6 +27,14 @@
 // Support for controlling the keyboard's LEDs
 #include "Kaleidoscope-LEDControl.h"
 
+// Show status of mod buttons
+#include <Kaleidoscope-LED-ActiveModColor.h>
+
+// Show active layer
+#include <Kaleidoscope-LED-ActiveLayerColor.h>
+
+//#include "Kaleidoscope-LEDEffect-FunctionalColor.h"
+
 // Support for magic combos (key chords that trigger an action)
 #include "Kaleidoscope-MagicCombo.h"
 
@@ -44,10 +52,10 @@ enum { PRIMARY, NUMPAD,  FUNCTION}; // layers
 
 enum { MACRO_VERSION_INFO,
        OSMALTCTRL,
-     MACRO_USER,
-     MACRO_FCDOWN,
-     MACRO_FCUP,
-     MACRO_ANY
+       MACRO_USER,
+       MACRO_FCDOWN,
+       MACRO_FCUP,
+       MACRO_ANY
      };
 
 
@@ -199,6 +207,10 @@ const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
   return MACRO_NONE;
 }
 
+/** A tiny wrapper, to be used by MagicCombo.
+ * This simply toggles the keyboard protocol via USBQuirks, and wraps it within
+ * a function with an unused argument, to match what MagicCombo expects.
+ */
 static void toggleKeyboardProtocol(uint8_t combo_index) {
   USBQuirks.toggleKeyboardProtocol();
 }
@@ -227,13 +239,120 @@ USE_MAGIC_COMBOS({.action = toggleKeyboardProtocol,
                   */
                  );
 
-/** A tiny wrapper, to be used by MagicCombo.
- * This simply toggles the keyboard protocol via USBQuirks, and wraps it within
- * a function with an unused argument, to match what MagicCombo expects.
- */
+// First, tell Kaleidoscope which plugins you want to use.
+// The order can be important. For example, LED effects are
+// added in the order they're listed here.
+KALEIDOSCOPE_INIT_PLUGINS(
+  // The EEPROMSettings & EEPROMKeymap plugins make it possible to have an
+  // editable keymap in EEPROM.
+//  EEPROMSettings,
+//  EEPROMKeymap,
+
+  // Focus allows bi-directional communication with the host, and is the
+  // interface through which the keymap in EEPROM can be edited.
+  //  Focus,
+  // FocusSettingsCommand adds a few Focus commands, intended to aid in changing some settings of the keyboard, such as the default layer (via the `settings.defaultLayer` command)
+  //  FocusSettingsCommand,
+
+  // FocusEEPROMCommand adds a set of Focus commands, which are very helpful in
+  // both debugging, and in backing up one's EEPROM contents.
+  // FocusEEPROMCommand,
+
+  // The boot greeting effect pulses the LED button for 10 seconds after the keyboard is first connected
+  // BootGreetingEffect,
+
+  // The hardware test mode, which can be invoked by tapping Prog, LED and the left Fn button at the same time.
+  // TestMode,
+
+  // LEDControl provides support for other LED modes
+  LEDControl,
+
+  // We start with the LED effect that turns off all the LEDs.
+  // LEDOff,
+
+  // IdleLayers,
+
+  // The macros plugin adds support for macros
+  Macros,
+  //MacrosOnTheFly,
+
+
+  // initialize oneshot
+  OneShot,
+  // initialize topsyturvy
+  TopsyTurvy,
+
+  // primaryLayerHighlighter,
+  //secondaryLayerHighlighter,
+  // functionLayerHighlighter,
+  // numpadLayerHighlighter,
+  // The rainbow effect changes the color of all of the keyboard's keys at the same time
+  // running through all the colors of the rainbow.
+  // LEDRainbowEffect,
+
+  // The rainbow wave effect lights up your keyboard with all the colors of a rainbow
+  // and slowly moves the rainbow across your keyboard
+  // LEDRainbowWaveEffect,
+
+  // The chase effect follows the adventure of a blue pixel which chases a red pixel across
+  // your keyboard. Spoiler: the blue pixel never catches the red pixel
+  // LEDChaseEffect,
+
+  // These static effects turn your keyboard's LEDs a variety of colors
+  // solidRed, solidOrange, solidYellow, 
+  // solidGreen, 
+  // solidBlue, solidIndigo, solidViolet,
+
+  // The breathe effect slowly pulses all of the LEDs on your keyboard
+  // LEDBreatheEffect,
+
+  // The AlphaSquare effect prints each character you type, using your
+  // keyboard's LEDs as a display
+  // AlphaSquareEffect,
+
+
+  LEDActiveLayerColorEffect,
+
+  // The stalker effect lights up the keys you've pressed recently
+  //StalkerEffect,
+
+  // The numpad plugin is responsible for lighting up the 'numpad' mode
+  // with a custom LED effect
+  //NumPad,
+
+  // The MouseKeys plugin lets you add keys to your keymap which move the mouse.
+  MouseKeys,
+  // funColor1,
+  
+  
+  // The HostPowerManagement plugin allows us to turn LEDs off when then host
+  // goes to sleep, and resume them when it wakes up.
+  // HostPowerManagement,
+
+  // The MagicCombo plugin lets you use key combinations to trigger custom
+  // actions - a bit like Macros, but triggered by pressing multiple keys at the
+  // same time.
+  MagicCombo,
+
+  // The USBQuirks plugin lets you do some things with USB that we aren't
+  // comfortable - or able - to do automatically, but can be useful
+  // nevertheless. Such as toggling the key report protocol between Boot (used
+  // by BIOSes) and Report (NKRO).
+  USBQuirks,
+  ActiveModColorEffect
+);
 
 void setup() {
   Kaleidoscope.setup();
+  static const cRGB layerColormap[] PROGMEM = {
+     CRGB(0, 128, 0),    // Primary
+     //CRGB(128, 107, 0),  // Secondary
+     CRGB(128, 0, 0),  // Numpad
+     CRGB(0, 0, 128)     // Function
+   };
+  LEDActiveLayerColorEffect.setColormap(layerColormap);
+  ActiveModColorEffect.highlight_color = CRGB(0x00, 0xff, 0x7f);
+  ActiveModColorEffect.sticky_color = CRGB(0xff, 0x00, 0x00);
 }
 
 void loop() {
